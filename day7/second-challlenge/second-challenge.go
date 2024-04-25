@@ -1,9 +1,8 @@
-package challenge1
+package challenge2
 
 import (
 	"fmt"
 	"os"
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -15,7 +14,7 @@ type BestCardToTurn struct {
 	value int
 }
 
-func SecondChallenge() {
+func Run() {
 	_hands, err := os.ReadFile("input.txt")
 	if err != nil {
 		panic(err)
@@ -55,17 +54,13 @@ func SecondChallenge() {
 
 	for i, v := range hands {
 		hb := strings.Split(v, " ")
-		newH := hb[0]
-		if strings.Contains(hands[i], "J") {
-			newH = treatJockerCards(hb[0], strenghtOrder)
-		}
 		ba, err := strconv.Atoi(hb[1])
 		if err != nil {
 			panic(err)
 		}
-		bidAmountMap[newH] = ba
-		matchWinQty[newH] = 0
-		hands[i] = newH
+		bidAmountMap[hb[0]] = ba
+		matchWinQty[hb[0]] = 0
+		hands[i] = hb[0]
 	}
 
 	for i, h := range hands {
@@ -98,26 +93,18 @@ func SecondChallenge() {
 	fmt.Println(totalOfWinnings)
 }
 
-func treatJockerCards(h string, strenghtOrder []string) string {
-	newH := h
-	lableCountMap := make(map[string]int)
-
-	if strings.Count(newH, "J") == 5 {
-		return newH
-	}
-
-	for _, l := range h {
-		lableCountMap[string(l)] += 1
+func treatJockerCards(lableCountMap map[string]int) {
+	if lableCountMap["j"] == 5 {
+		return
 	}
 
 	var bestCardToTurn BestCardToTurn
-	var sameValuesInArr []int
 
 	for k, v := range lableCountMap {
 		if k == "J" {
 			continue
 		}
-		sameValuesInArr = append(sameValuesInArr, v)
+
 		if v > bestCardToTurn.value {
 			bestCardToTurn = BestCardToTurn{
 				key:   k,
@@ -126,53 +113,8 @@ func treatJockerCards(h string, strenghtOrder []string) string {
 		}
 	}
 
-	condition := func(num int) bool {
-		return num == bestCardToTurn.value
-	}
-
-	sameValuesInArr = filter(sameValuesInArr, condition)
-
-	if len(sameValuesInArr) > 1 {
-		var keys []string
-
-		for k, v := range lableCountMap {
-			if v == sameValuesInArr[0] {
-				keys = append(keys, k)
-			}
-		}
-
-		greatLabel := BestCardToTurn{
-			value: 1<<63 - 1,
-		}
-
-		for _, v := range keys {
-			index := slices.Index(strenghtOrder, string(v))
-			if index < greatLabel.value {
-				greatLabel = BestCardToTurn{
-					key:   v,
-					value: index,
-				}
-			}
-		}
-		// t := bestCardToTurn
-		bestCardToTurn = greatLabel
-		// fmt.Println("h: ", newH, "old: ", t, "new: ", bestCardToTurn)
-	}
-
-	pattern := fmt.Sprintf(`%s`, "J")
-	reg, err := regexp.Compile(pattern)
-	if err != nil {
-		panic(err)
-	}
-
-	newH = reg.ReplaceAllString(newH, bestCardToTurn.key)
-	fmt.Println("new: ", newH, "old: ", h)
-	// FIX: NÃO SOBREPOR A MÃO ATUAL, SOMENTE MUDAR O VALOR NA ATRIBUIÇÃO DA MÃO
-	// POR EXEMPLO, O J PODE FAZER ELA FORMAR UM FULL HOUSE, MAS DEVE CONTINUAR SENDO UM J
-	// PORQUE QUANDO DUAS MÃOS OBTIVEREM O MESMO TIPO O J DEVE SER CONTADO COMO J E NÃO COMO
-	// UMA CARTA MAIS FORTE
-
-	return newH
+	lableCountMap[bestCardToTurn.key] += lableCountMap["J"]
+	delete(lableCountMap, "J")
 }
 
 func getHandValue(h string) string {
@@ -181,6 +123,8 @@ func getHandValue(h string) string {
 	for _, l := range h {
 		lableCountMap[string(l)] += 1
 	}
+
+	treatJockerCards(lableCountMap)
 
 	handValuesMap := map[string]string{
 		"5":  "Five of a kind",

@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func FirstChallenge() {
+func Run() {
 	_hands, err := os.ReadFile("input.txt")
 	if err != nil {
 		panic(err)
