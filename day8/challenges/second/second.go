@@ -14,11 +14,6 @@ type NodeDirections struct {
 	right Node
 }
 
-const (
-	startNode  Node = Node("AAA")
-	finishNode Node = Node("ZZZ")
-)
-
 func Run() {
 	input, err := os.ReadFile("input.txt")
 	if err != nil {
@@ -31,9 +26,11 @@ func Run() {
 
 	nodes := mapp[2:]
 
-	reg := regexp.MustCompile(`([A-Z]+) = \(([A-Z]+), ([A-Z]+)\)`)
+	reg := regexp.MustCompile(`([A-Z0-9]+) = \(([A-Z0-9]+), ([A-Z0-9]+)\)`)
 
 	nodesMap := make(map[Node]NodeDirections)
+
+	var startNodes []Node
 
 	for _, node := range nodes {
 		nodeInfo := reg.FindStringSubmatch(node)[1:]
@@ -41,39 +38,75 @@ func Run() {
 		node, left, right := nodeInfo[0], nodeInfo[1], nodeInfo[2]
 
 		nodesMap[Node(node)] = NodeDirections{Node(left), Node(right)}
+
+		if Node(node[2]) == "A" {
+			startNodes = append(startNodes, Node(node))
+		}
 	}
 
-	stepsToFinish := execInstructions(instructions, nodesMap, startNode, 0)
+	steps := make([]int, len(startNodes))
 
-	fmt.Println(stepsToFinish)
-}
+	execInstructions(instructions, nodesMap, startNodes, steps)
 
-func walk(nodeDirections NodeDirections, instruction rune) Node {
-	switch string(instruction) {
-	case "L":
-		return Node(nodeDirections.left)
-	default:
-		return Node(nodeDirections.right)
+	totalSteps := 1
+
+	for _, step := range steps {
+		totalSteps = calcLCM(totalSteps, step)
 	}
+
+	fmt.Println(totalSteps)
 }
 
-func execInstructions(instructions string, nodesMap map[Node]NodeDirections, currentNode Node, stepsToFinish int) int {
+func ghostWalk(startNodes []Node, nodesMap map[Node]NodeDirections, instruction rune, steps []int) int {
+	endPaths := 0
+
+	for i, node := range startNodes {
+		if Node(startNodes[i][2]) == "Z" {
+			endPaths++
+			continue
+		}
+
+		steps[i] += 1
+
+		nodeDirections := nodesMap[node]
+		switch string(instruction) {
+		case "L":
+			startNodes[i] = nodeDirections.left
+		default:
+			startNodes[i] = nodeDirections.right
+		}
+	}
+
+	return endPaths
+}
+
+func execInstructions(instructions string, nodesMap map[Node]NodeDirections, startNodes []Node, steps []int) {
 	finish := false
+
 	for _, instruction := range instructions {
-		nodeDirections := nodesMap[currentNode]
-		currentNode = walk(nodeDirections, instruction)
+		endPaths := ghostWalk(startNodes, nodesMap, instruction, steps)
 
-		stepsToFinish++
-
-		if currentNode == finishNode {
+		if endPaths == len(startNodes) {
 			finish = true
 			break
 		}
 	}
 
 	if !finish {
-		return execInstructions(instructions, nodesMap, currentNode, stepsToFinish)
+		execInstructions(instructions, nodesMap, startNodes, steps)
+	}
+}
+
+// Function to calculate the greatest common divisor (GCD) Euclid's Algorithm
+func calcGCD(a, b int) int {
+	if b == 0 {
+		return a
 	}
 
-	return stepsToFinish
+	return calcGCD(b, a%b)
+}
+
+// Function to calculate LCM
+func calcLCM(a, b int) int {
+	return (a * b) / calcGCD(a, b)
 }
