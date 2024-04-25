@@ -1,8 +1,11 @@
 package main
 
-import challenge2 "github.com/wesleyfebarretos/aoc/day8/challenges/second"
+import (
+	challenge1 "github.com/wesleyfebarretos/aoc/day8/challenges/first"
+	challenge2 "github.com/wesleyfebarretos/aoc/day8/challenges/second"
+)
 
 func main() {
-	// challenge1.Run()
+	challenge1.Run()
 	challenge2.Run()
 }
