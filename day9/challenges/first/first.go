@@ -49,7 +49,6 @@ func getReport() [][]int {
 func extrapolateSequences(index int, report *[][]int) {
 	sequence := (*report)[index]
 
-	fmt.Printf("Before Report \n%v\n\n", (*report)[index])
 	var sequences [][]int
 	sequences = append(sequences, sequence)
 	for i := 0; i < len(sequences); i++ {
@@ -64,14 +63,6 @@ func extrapolateSequences(index int, report *[][]int) {
 		(*report)[index] = v
 		break
 	}
-	fmt.Printf("New Sequence \n\n")
-	fmt.Printf("Report \n%v\n\n", (*report)[index])
-	fmt.Println("Sequences")
-	for _, r := range sequences {
-		fmt.Println(r)
-	}
-	fmt.Println("")
-	fmt.Println("")
 }
 
 func createSequences(sequences *[][]int, currentIndex, newSequenceLen int) bool {
@@ -81,11 +72,8 @@ func createSequences(sequences *[][]int, currentIndex, newSequenceLen int) bool 
 	for i := 0; i < newSequenceLen; i++ {
 		currSeqValue := currentSequence[i]
 		currSeqNextValue := currentSequence[i+1]
-		currSeqValueDiff := currSeqValue - currSeqNextValue
+		currSeqValueDiff := currSeqNextValue - currSeqValue
 
-		if currSeqValueDiff < 0 {
-			currSeqValueDiff *= -1
-		}
 		newSequence = append(newSequence, currSeqValueDiff)
 	}
 
@@ -104,7 +92,6 @@ func extrapolate(sequences *[][]int) {
 		beforeSeqLastValue := beforeSeq[len(beforeSeq)-1]
 		currSeq := (*sequences)[i]
 		currSeqLastValue := currSeq[len(currSeq)-1]
-		// fmt.Printf("last value: %d\n before last value: %d\n", currSeqLastValue, beforeSeqLastValue)
 		(*sequences)[i] = append((*sequences)[i], beforeSeqLastValue+currSeqLastValue)
 	}
 }
