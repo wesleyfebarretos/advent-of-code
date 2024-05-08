@@ -3,8 +3,19 @@ package challenge1
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 )
+
+type Pipe struct {
+	character string
+	right     bool
+	left      bool
+	top       bool
+	bottom    bool
+	x         int
+	y         int
+}
 
 func Run() {
 	input, err := os.ReadFile("input.txt")
@@ -12,55 +23,140 @@ func Run() {
 		panic(err)
 	}
 
-	ground := strings.Split(strings.TrimSpace(string(input)), "\n")
-	var steps [4]int
+	rows := getPipes(input)
 
-	startDepth, startPosition := getStartPosition(ground)
+	var startPipe Pipe
 
-	ways := makeTheWay(startDepth, startPosition)
-
-	for i := 0; i < len(ways); {
-		currDepth, currPosition := ways[i][0], ways[i][1]
-		exit := walk(ground, steps, currDepth, currPosition)
-		if exit {
-			i++
-		}
-	}
-}
-
-func walk(ground []string, steps [4]int, currDepth, currPosition int) (exit bool) {
-	fmt.Println(currDepth, currPosition)
-	return true
-}
-
-func verticalWalk(groundLen int, currDepth *int) bool {
-	if *currDepth == 0 {
-		*currDepth += 1
-	}
-	if *currDepth == 0 {
-		*currDepth += 1
-	}
-	return true
-}
-
-func makeTheWay(startDepth, startPosition int) [4][2]int {
-	var ways [4][2]int
-	ways[0][0], ways[0][1] = startDepth-1, startPosition
-	ways[1][0], ways[1][1] = startDepth+1, startPosition
-	ways[2][0], ways[2][1] = startDepth, startPosition-1
-	ways[3][0], ways[3][1] = startDepth, startPosition+1
-	return ways
-}
-
-func getStartPosition(ground []string) (startDepth, startPosition int) {
-	for i := range ground {
-		startDepth = i
-		for i2, v2 := range ground[i] {
-			if v2 == rune('S') {
-				startPosition = i2
-				return
+	for _, row := range rows {
+		for _, pipe := range row {
+			if pipe.character == "S" {
+				startPipe = pipe
 			}
 		}
 	}
-	panic("start position not found")
+
+	directions := map[string]map[string]int{
+		"right": {
+			"x": 1,
+		},
+		"left": {
+			"x": -1,
+		},
+		"top": {
+			"y": -1,
+		},
+		"bottom": {
+			"y": 1,
+		},
+	}
+
+	// fmt.Printf("StartPipe: %+v\n", startPipe)
+	// Debug pipes
+	// for _, row := range rows {
+	// 	for _, pipes := range row {
+	// 		fmt.Printf("%+v\n", pipes)
+	// 	}
+	// }
+
+	for direction, coordinates := range directions {
+		startDirection := direction
+		for coordinate, value := range coordinates {
+			field := reflect.ValueOf(startPipe).FieldByName(coordinate)
+			startPosition := field.Int() + int64(value)
+			fmt.Printf("Direction: %s value: %d\n", startDirection, startPosition)
+		}
+	}
+	// TODO: Criar função para pegar posição inversa da direção atual
+	// a função vai receber a direção atual e vai ficar modificando ela
+	// até nao encontrar mais caminho e retornar falso pra quebrar o infinite loop
+	// pra cada execução do loop inserir um valor a mais no array de movimentos
+}
+
+func getPipes(input []byte) [][]Pipe {
+	ground := strings.Split(strings.TrimSpace(string(input)), "\n")
+
+	rows := make([][]Pipe, len(ground))
+
+	for i, row := range ground {
+		for y, pipeRune := range row {
+			pipe := string(pipeRune)
+			switch pipe {
+			case "|":
+				rows[i] = append(rows[i], Pipe{
+					character: pipe,
+					right:     false,
+					left:      false,
+					top:       true,
+					bottom:    true,
+					x:         i,
+					y:         y,
+				})
+			case "-":
+				rows[i] = append(rows[i], Pipe{
+					character: pipe,
+					right:     true,
+					left:      true,
+					top:       false,
+					bottom:    false,
+					x:         i,
+					y:         y,
+				})
+			case "J":
+				rows[i] = append(rows[i], Pipe{
+					character: pipe,
+					right:     false,
+					left:      true,
+					top:       true,
+					bottom:    false,
+					x:         i,
+					y:         y,
+				})
+			case "L":
+				rows[i] = append(rows[i], Pipe{
+					character: pipe,
+					right:     true,
+					left:      false,
+					top:       true,
+					bottom:    false,
+					x:         i,
+					y:         y,
+				})
+			case "7":
+				rows[i] = append(rows[i], Pipe{
+					character: pipe,
+					right:     false,
+					left:      true,
+					top:       false,
+					bottom:    true,
+					x:         i,
+					y:         y,
+				})
+			case "F":
+				rows[i] = append(rows[i], Pipe{
+					character: pipe,
+					right:     true,
+					left:      false,
+					top:       false,
+					bottom:    true,
+					x:         i,
+					y:         y,
+				})
+			case ".", "S":
+				rows[i] = append(rows[i], Pipe{
+					character: pipe,
+					right:     false,
+					left:      false,
+					top:       false,
+					bottom:    false,
+					x:         i,
+					y:         y,
+				})
+			default:
+				err := fmt.Sprintf("Unkown pipe error at position: [%d][%d]", i, y)
+				panic(err)
+			}
+		}
+	}
+
+	return rows
 }
