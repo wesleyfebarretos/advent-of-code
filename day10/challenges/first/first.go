@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 )
 
 type Pipe struct {
-	character string
-	right     bool
-	left      bool
-	top       bool
-	bottom    bool
+	Character string
+	Right     bool
+	Left      bool
+	Top       bool
+	Down      bool
 	x         int
 	y         int
 }
@@ -29,47 +30,109 @@ func Run() {
 
 	for _, row := range rows {
 		for _, pipe := range row {
-			if pipe.character == "S" {
+			if pipe.Character == "S" {
 				startPipe = pipe
 			}
 		}
 	}
 
 	directions := map[string]map[string]int{
-		"right": {
+		"Right": {
 			"x": 1,
 		},
-		"left": {
+		"Left": {
 			"x": -1,
 		},
-		"top": {
+		"Top": {
 			"y": -1,
 		},
-		"bottom": {
+		"Down": {
 			"y": 1,
 		},
 	}
 
-	// fmt.Printf("StartPipe: %+v\n", startPipe)
-	// Debug pipes
-	// for _, row := range rows {
-	// 	for _, pipes := range row {
-	// 		fmt.Printf("%+v\n", pipes)
-	// 	}
-	// }
+	steps := make([]int, 4)
+	index := 0
 
+	// fmt.Printf("Initial Coordinates:\nX: %d\nY: %d\n", startPipe.x, startPipe.y)
 	for direction, coordinates := range directions {
 		startDirection := direction
 		for coordinate, value := range coordinates {
-			field := reflect.ValueOf(startPipe).FieldByName(coordinate)
-			startPosition := field.Int() + int64(value)
-			fmt.Printf("Direction: %s value: %d\n", startDirection, startPosition)
+			x, y := startPipe.x, startPipe.y
+			if coordinate == "x" {
+				x += value
+			} else {
+				y += value
+			}
+
+			for {
+				fmt.Printf("PrevPipe: %+v\n", rows[y][x])
+				matchDirection, nextDirection, pipe := walk(rows, startDirection, x, y)
+
+				if !matchDirection {
+					index++
+					break
+				}
+
+				x, y = pipe.x, pipe.y
+
+				for coordinate, value := range directions[nextDirection] {
+					if coordinate == "x" {
+						x += value
+					} else {
+						y += value
+					}
+				}
+
+				startDirection = nextDirection
+				steps[index]++
+			}
 		}
 	}
-	// TODO: Criar função para pegar posição inversa da direção atual
-	// a função vai receber a direção atual e vai ficar modificando ela
-	// até nao encontrar mais caminho e retornar falso pra quebrar o infinite loop
-	// pra cada execução do loop inserir um valor a mais no array de movimentos
+
+	fmt.Printf("Steps: %v", steps)
+}
+
+func walk(rows [][]Pipe, direction string, x, y int) (bool, string, Pipe) {
+	// TODO: Verificar o motivo de não estar continuando o seguimento dos passos
+	// A função está terminando muito cedo
+	// O nextPipe está com o mesmo valor do PipeCurrent da sessão, entender bem e ajustar fluxo de dados
+	fmt.Printf("Direction: %s\nPipe: %+v\nX: %d\nY: %d\n", direction, rows[y][x], x, y)
+	nextPipe := rows[y][x]
+
+	nextDirection := direction
+
+	directions := []string{
+		"Right",
+		"Left",
+		"Top",
+		"Down",
+	}
+
+	reverseDirection := getReverseDirection(direction)
+
+	matchDirection := reflect.ValueOf(nextPipe).FieldByName(reverseDirection)
+
+	if !matchDirection.Bool() {
+		return false, nextDirection, nextPipe
+	}
+
+	v := reflect.ValueOf(nextPipe)
+	typ := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		key := typ.Field(i).Name
+		if slices.Index(directions, key) == -1 || key == reverseDirection {
+			continue
+		}
+		value := v.Field(i)
+		if value.Bool() {
+			nextDirection = key
+			break
+		}
+	}
+
+	return matchDirection.Bool(), nextDirection, nextPipe
 }
 
 func getPipes(input []byte) [][]Pipe {
@@ -83,71 +146,71 @@ func getPipes(input []byte) [][]Pipe {
 			switch pipe {
 			case "|":
 				rows[i] = append(rows[i], Pipe{
-					character: pipe,
-					right:     false,
-					left:      false,
-					top:       true,
-					bottom:    true,
+					Character: pipe,
+					Right:     false,
+					Left:      false,
+					Top:       true,
+					Down:      true,
 					x:         i,
 					y:         y,
 				})
 			case "-":
 				rows[i] = append(rows[i], Pipe{
-					character: pipe,
-					right:     true,
-					left:      true,
-					top:       false,
-					bottom:    false,
+					Character: pipe,
+					Right:     true,
+					Left:      true,
+					Top:       false,
+					Down:      false,
 					x:         i,
 					y:         y,
 				})
 			case "J":
 				rows[i] = append(rows[i], Pipe{
-					character: pipe,
-					right:     false,
-					left:      true,
-					top:       true,
-					bottom:    false,
+					Character: pipe,
+					Right:     false,
+					Left:      true,
+					Top:       true,
+					Down:      false,
 					x:         i,
 					y:         y,
 				})
 			case "L":
 				rows[i] = append(rows[i], Pipe{
-					character: pipe,
-					right:     true,
-					left:      false,
-					top:       true,
-					bottom:    false,
+					Character: pipe,
+					Right:     true,
+					Left:      false,
+					Top:       true,
+					Down:      false,
 					x:         i,
 					y:         y,
 				})
 			case "7":
 				rows[i] = append(rows[i], Pipe{
-					character: pipe,
-					right:     false,
-					left:      true,
-					top:       false,
-					bottom:    true,
+					Character: pipe,
+					Right:     false,
+					Left:      true,
+					Top:       false,
+					Down:      true,
 					x:         i,
 					y:         y,
 				})
 			case "F":
 				rows[i] = append(rows[i], Pipe{
-					character: pipe,
-					right:     true,
-					left:      false,
-					top:       false,
-					bottom:    true,
+					Character: pipe,
+					Right:     true,
+					Left:      false,
+					Top:       false,
+					Down:      true,
 					x:         i,
 					y:         y,
 				})
 			case ".", "S":
 				rows[i] = append(rows[i], Pipe{
-					character: pipe,
-					right:     false,
-					left:      false,
-					top:       false,
-					bottom:    false,
+					Character: pipe,
+					Right:     false,
+					Left:      false,
+					Top:       false,
+					Down:      false,
 					x:         i,
 					y:         y,
 				})
@@ -159,4 +222,19 @@ func getPipes(input []byte) [][]Pipe {
 	}
 
 	return rows
+}
+
+func getReverseDirection(direction string) string {
+	switch direction {
+	case "Right":
+		return "Left"
+	case "Left":
+		return "Right"
+	case "Down":
+		return "Top"
+	case "Top":
+		return "Down"
+	default:
+		panic("invalid direction")
+	}
 }
