@@ -54,37 +54,30 @@ func Run() {
 	steps := make([]int, 4)
 	index := 0
 
+	// TODO: OS PIPES ESTÃO SE MOVENDO BEM, AGORA PRECISO VERIFICAR A CONDIÇÃO DE PARADA
+	// ESTÃO ANDANDO ALÉM DA CONTA, TEM UMA REGRA PRA ISSO, LER BEM O ENUNCIADO
 	// fmt.Printf("Initial Coordinates:\nX: %d\nY: %d\n", startPipe.x, startPipe.y)
-	for direction, coordinates := range directions {
-		startDirection := direction
-		for coordinate, value := range coordinates {
-			x, y := startPipe.x, startPipe.y
-			if coordinate == "x" {
-				x += value
-			} else {
-				y += value
-			}
-
+	for _direction, coordinates := range directions {
+		direction := _direction
+		for _coordinate, _coordinateValue := range coordinates {
+			coordinate := _coordinate
+			coordinateValue := _coordinateValue
+			pipe := startPipe
 			for {
-				fmt.Printf("PrevPipe: %+v\n", rows[y][x])
-				matchDirection, nextDirection, pipe := walk(rows, startDirection, x, y)
+				matchDirection, nextDirection, nextPipe := walk(rows, direction, coordinate, coordinateValue, pipe)
 
 				if !matchDirection {
 					index++
 					break
 				}
 
-				x, y = pipe.x, pipe.y
-
-				for coordinate, value := range directions[nextDirection] {
-					if coordinate == "x" {
-						x += value
-					} else {
-						y += value
-					}
+				for key, value := range directions[nextDirection] {
+					coordinate = key
+					coordinateValue = value
 				}
 
-				startDirection = nextDirection
+				pipe = nextPipe
+				direction = nextDirection
 				steps[index]++
 			}
 		}
@@ -93,12 +86,16 @@ func Run() {
 	fmt.Printf("Steps: %v", steps)
 }
 
-func walk(rows [][]Pipe, direction string, x, y int) (bool, string, Pipe) {
-	// TODO: Verificar o motivo de não estar continuando o seguimento dos passos
-	// A função está terminando muito cedo
-	// O nextPipe está com o mesmo valor do PipeCurrent da sessão, entender bem e ajustar fluxo de dados
-	fmt.Printf("Direction: %s\nPipe: %+v\nX: %d\nY: %d\n", direction, rows[y][x], x, y)
+func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
+	x, y := pipe.x, pipe.y
+
+	if coordinate == "x" {
+		x += coordinateValue
+	} else {
+		y += coordinateValue
+	}
 	nextPipe := rows[y][x]
+	fmt.Printf("Direction: %s\nPipe: %+v\nNextPipe: %+v\nX: %d\nY: %d\n", direction, pipe, nextPipe, x, y)
 
 	nextDirection := direction
 
@@ -140,82 +137,82 @@ func getPipes(input []byte) [][]Pipe {
 
 	rows := make([][]Pipe, len(ground))
 
-	for i, row := range ground {
-		for y, pipeRune := range row {
+	for y, row := range ground {
+		for x, pipeRune := range row {
 			pipe := string(pipeRune)
 			switch pipe {
 			case "|":
-				rows[i] = append(rows[i], Pipe{
+				rows[y] = append(rows[y], Pipe{
 					Character: pipe,
 					Right:     false,
 					Left:      false,
 					Top:       true,
 					Down:      true,
-					x:         i,
+					x:         x,
 					y:         y,
 				})
 			case "-":
-				rows[i] = append(rows[i], Pipe{
+				rows[y] = append(rows[y], Pipe{
 					Character: pipe,
 					Right:     true,
 					Left:      true,
 					Top:       false,
 					Down:      false,
-					x:         i,
+					x:         x,
 					y:         y,
 				})
 			case "J":
-				rows[i] = append(rows[i], Pipe{
+				rows[y] = append(rows[y], Pipe{
 					Character: pipe,
 					Right:     false,
 					Left:      true,
 					Top:       true,
 					Down:      false,
-					x:         i,
+					x:         x,
 					y:         y,
 				})
 			case "L":
-				rows[i] = append(rows[i], Pipe{
+				rows[y] = append(rows[y], Pipe{
 					Character: pipe,
 					Right:     true,
 					Left:      false,
 					Top:       true,
 					Down:      false,
-					x:         i,
+					x:         x,
 					y:         y,
 				})
 			case "7":
-				rows[i] = append(rows[i], Pipe{
+				rows[y] = append(rows[y], Pipe{
 					Character: pipe,
 					Right:     false,
 					Left:      true,
 					Top:       false,
 					Down:      true,
-					x:         i,
+					x:         x,
 					y:         y,
 				})
 			case "F":
-				rows[i] = append(rows[i], Pipe{
+				rows[y] = append(rows[y], Pipe{
 					Character: pipe,
 					Right:     true,
 					Left:      false,
 					Top:       false,
 					Down:      true,
-					x:         i,
+					x:         x,
 					y:         y,
 				})
 			case ".", "S":
-				rows[i] = append(rows[i], Pipe{
+				rows[y] = append(rows[y], Pipe{
 					Character: pipe,
 					Right:     false,
 					Left:      false,
 					Top:       false,
 					Down:      false,
-					x:         i,
+					x:         x,
 					y:         y,
 				})
 			default:
-				err := fmt.Sprintf("Unkown pipe error at position: [%d][%d]", i, y)
+				err := fmt.Sprintf("Unkown pipe error at position: [%d][%d]", y, x)
 				panic(err)
 			}
 		}
