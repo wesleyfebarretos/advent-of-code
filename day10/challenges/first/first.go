@@ -2,6 +2,7 @@ package challenge1
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"slices"
@@ -54,9 +55,6 @@ func Run() {
 	steps := make([]int, 4)
 	index := 0
 
-	// TODO: OS PIPES ESTÃO SE MOVENDO BEM, AGORA PRECISO VERIFICAR A CONDIÇÃO DE PARADA
-	// ESTÃO ANDANDO ALÉM DA CONTA, TEM UMA REGRA PRA ISSO, LER BEM O ENUNCIADO
-	// fmt.Printf("Initial Coordinates:\nX: %d\nY: %d\n", startPipe.x, startPipe.y)
 	for _direction, coordinates := range directions {
 		direction := _direction
 		for _coordinate, _coordinateValue := range coordinates {
@@ -83,7 +81,8 @@ func Run() {
 		}
 	}
 
-	fmt.Printf("Steps: %v", steps)
+	maxSteps := slices.Max(steps)
+	fmt.Printf("Steps: %v", math.Ceil(float64(maxSteps)/2))
 }
 
 func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
@@ -94,8 +93,12 @@ func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe
 	} else {
 		y += coordinateValue
 	}
+
+	if x < 0 || y < 0 {
+		return false, direction, pipe
+	}
 	nextPipe := rows[y][x]
-	fmt.Printf("Direction: %s\nPipe: %+v\nNextPipe: %+v\nX: %d\nY: %d\n", direction, pipe, nextPipe, x, y)
+	// fmt.Printf("Direction: %s\nPipe: %+v\nNextPipe: %+v\nX: %d\nY: %d\n", direction, pipe, nextPipe, x, y)
 
 	nextDirection := direction
 
