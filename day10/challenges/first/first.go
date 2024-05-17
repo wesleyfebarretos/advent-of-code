@@ -82,7 +82,7 @@ func Run() {
 	}
 
 	maxSteps := slices.Max(steps)
-	fmt.Printf("Steps: %v", math.Ceil(float64(maxSteps)/2))
+	fmt.Printf("Part One Steps: %v\n", math.Ceil(float64(maxSteps)/2))
 }
 
 func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
