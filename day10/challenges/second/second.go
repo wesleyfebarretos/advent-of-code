@@ -2,10 +2,9 @@ package challenge2
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"reflect"
-	"slices"
+	"regexp"
 	"strings"
 )
 
@@ -25,17 +24,19 @@ func Run() {
 		panic(err)
 	}
 
-	rows := getPipes(input)
+	pipes := getPipes(input)
 
 	var startPipe Pipe
 
-	for _, row := range rows {
+	for _, row := range pipes {
 		for _, pipe := range row {
 			if pipe.Character == "S" {
 				startPipe = pipe
 			}
 		}
 	}
+
+	var maybeS []string
 
 	directions := map[string]map[string]int{
 		"Right": {
@@ -52,87 +53,48 @@ func Run() {
 		},
 	}
 
-	steps := make([]int, 4)
-	index := 0
+	for direction, dValue := range directions {
+		for coordinate, cValue := range dValue {
+			x, y := startPipe.x, startPipe.y
 
-	for _direction, coordinates := range directions {
-		direction := _direction
-		for _coordinate, _coordinateValue := range coordinates {
-			coordinate := _coordinate
-			coordinateValue := _coordinateValue
-			pipe := startPipe
-			for {
-				matchDirection, nextDirection, nextPipe := walk(rows, direction, coordinate, coordinateValue, pipe)
+			if coordinate == "x" {
+				x += cValue
+			} else {
+				y += cValue
+			}
 
-				if !matchDirection {
-					index++
-					break
-				}
+			reverseDirection := getReverseDirection(direction)
+			nextPipe := pipes[y][x]
+			matchDirection := reflect.ValueOf(nextPipe).FieldByName(reverseDirection)
 
-				for key, value := range directions[nextDirection] {
-					coordinate = key
-					coordinateValue = value
-				}
-
-				pipe = nextPipe
-				direction = nextDirection
-				steps[index]++
+			if matchDirection.Bool() {
+				maybeS = append(maybeS, direction)
 			}
 		}
 	}
 
-	maxSteps := slices.Max(steps)
-	fmt.Printf("Part Two Steps: %v", math.Ceil(float64(maxSteps)/2))
-}
+	var truthyS string
 
-func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
-	x, y := pipe.x, pipe.y
-
-	if coordinate == "x" {
-		x += coordinateValue
-	} else {
-		y += coordinateValue
+	switch strings.Join(maybeS, "") {
+	case "TopDown", "DownTop":
+		truthyS = "|"
+	case "LeftRight", "RightLeft":
+		truthyS = "-"
+	case "DownRight", "RightDown":
+		truthyS = "F"
+	case "DownLeft", "LeftDown":
+		truthyS = "7"
+	case "TopLeft", "LeftTop":
+		truthyS = "J"
+	case "TopRight", "RightTop":
+		truthyS = "L"
 	}
 
-	if x < 0 || y < 0 {
-		return false, direction, pipe
-	}
-	nextPipe := rows[y][x]
-	// fmt.Printf("Direction: %s\nPipe: %+v\nNextPipe: %+v\nX: %d\nY: %d\n", direction, pipe, nextPipe, x, y)
+	reg := regexp.MustCompile(`[S]+`)
+	rows := strings.Split(strings.TrimSpace(reg.ReplaceAllString(string(input), truthyS)), "\n")
 
-	nextDirection := direction
-
-	directions := []string{
-		"Right",
-		"Left",
-		"Top",
-		"Down",
-	}
-
-	reverseDirection := getReverseDirection(direction)
-
-	matchDirection := reflect.ValueOf(nextPipe).FieldByName(reverseDirection)
-
-	if !matchDirection.Bool() {
-		return false, nextDirection, nextPipe
-	}
-
-	v := reflect.ValueOf(nextPipe)
-	typ := v.Type()
-
-	for i := 0; i < v.NumField(); i++ {
-		key := typ.Field(i).Name
-		if slices.Index(directions, key) == -1 || key == reverseDirection {
-			continue
-		}
-		value := v.Field(i)
-		if value.Bool() {
-			nextDirection = key
-			break
-		}
-	}
-
-	return matchDirection.Bool(), nextDirection, nextPipe
+	// TODO: Retirar caracteres que não fazem parte do loop principal e após isso aplicar ray casting algorithm
+	fmt.Println(strings.Join(rows, "\n"))
 }
 
 func getPipes(input []byte) [][]Pipe {
