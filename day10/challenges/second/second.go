@@ -2,9 +2,11 @@ package challenge2
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -37,6 +39,7 @@ func Run() {
 	}
 
 	var maybeS []string
+	_ = maybeS
 
 	directions := map[string]map[string]int{
 		"Right": {
@@ -53,6 +56,52 @@ func Run() {
 		},
 	}
 
+	steps := make([]int, 4)
+	var loops [][][]int
+	for range directions {
+		loops = append(loops, [][]int{{startPipe.y, startPipe.x}})
+	}
+	index := 0
+
+	for _direction, coordinates := range directions {
+		direction := _direction
+		for _coordinate, _coordinateValue := range coordinates {
+			coordinate := _coordinate
+			coordinateValue := _coordinateValue
+			pipe := startPipe
+			for {
+				matchDirection, nextDirection, nextPipe := walk(pipes, direction, coordinate, coordinateValue, pipe)
+				loops[index] = append(loops[index], []int{nextPipe.y, nextPipe.x})
+
+				if !matchDirection {
+					index++
+					break
+				}
+
+				for key, value := range directions[nextDirection] {
+					coordinate = key
+					coordinateValue = value
+				}
+
+				pipe = nextPipe
+				direction = nextDirection
+				steps[index]++
+			}
+		}
+	}
+
+	var mainLoop [][]int
+
+	for _, v := range loops {
+		if len(v) > len(mainLoop) {
+			mainLoop = v
+		}
+	}
+
+	maxSteps := slices.Max(steps)
+
+	fmt.Printf("Part One Steps: %v\n", math.Ceil(float64(maxSteps)/2))
+
 	for direction, dValue := range directions {
 		for coordinate, cValue := range dValue {
 			x, y := startPipe.x, startPipe.y
@@ -61,6 +110,14 @@ func Run() {
 				x += cValue
 			} else {
 				y += cValue
+			}
+
+			if y < 0 || y > len(pipes) {
+				continue
+			}
+
+			if x < 0 || x > len(pipes[0]) {
+				continue
 			}
 
 			reverseDirection := getReverseDirection(direction)
@@ -90,11 +147,110 @@ func Run() {
 		truthyS = "L"
 	}
 
+	var mainLoopString []string
+
+	for _, v := range mainLoop {
+		mainLoopString = append(mainLoopString, fmt.Sprintf("%d%d", v[0], v[1]))
+	}
+
 	reg := regexp.MustCompile(`[S]+`)
 	rows := strings.Split(strings.TrimSpace(reg.ReplaceAllString(string(input), truthyS)), "\n")
 
-	// TODO: Retirar caracteres que não fazem parte do loop principal e após isso aplicar ray casting algorithm
-	fmt.Println(strings.Join(rows, "\n"))
+	var mutableRows [][]rune
+
+	for i := range rows {
+		mutableRows = append(mutableRows, []rune(rows[i]))
+	}
+
+	for y, row := range mutableRows {
+		for x := range row {
+			coordinate := fmt.Sprintf("%d%d", y, x)
+			if slices.Index(mainLoopString, coordinate) == -1 {
+				mutableRows[y][x] = rune('.')
+			}
+		}
+	}
+
+	for i := range mutableRows {
+		rows[i] = string(mutableRows[i])
+	}
+
+	for _, row := range rows {
+		for x, _ch := range row {
+			ch := string(_ch)
+			intersections := 0
+			_ = intersections
+			if ch != "." {
+				continue
+			}
+
+			for _x := x + 1; _x < len(row); x++ {
+				currCh := string(row[_x])
+				if currCh == "|" {
+					intersections++
+				}
+
+				if currCh == "F" && string(row[_x+1]) == "J" {
+					intersections++
+				}
+				// TODO: Continuar lógica fazer andar para os demais lados
+				// e verificar se está dentro ou não do loop, considerando os
+				// pipes que causam interseção, fiz o andar pra direita, falta
+				// pra esquerda, baixo e cima
+			}
+		}
+	}
+	// fmt.Println(strings.Join(rows, "\n"))
+}
+
+func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
+	x, y := pipe.x, pipe.y
+
+	if coordinate == "x" {
+		x += coordinateValue
+	} else {
+		y += coordinateValue
+	}
+
+	if x < 0 || y < 0 {
+		return false, direction, pipe
+	}
+	nextPipe := rows[y][x]
+	// fmt.Printf("Direction: %s\nPipe: %+v\nNextPipe: %+v\nX: %d\nY: %d\n", direction, pipe, nextPipe, x, y)
+
+	nextDirection := direction
+
+	directions := []string{
+		"Right",
+		"Left",
+		"Top",
+		"Down",
+	}
+
+	reverseDirection := getReverseDirection(direction)
+
+	matchDirection := reflect.ValueOf(nextPipe).FieldByName(reverseDirection)
+
+	if !matchDirection.Bool() {
+		return false, nextDirection, nextPipe
+	}
+
+	v := reflect.ValueOf(nextPipe)
+	typ := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		key := typ.Field(i).Name
+		if slices.Index(directions, key) == -1 || key == reverseDirection {
+			continue
+		}
+		value := v.Field(i)
+		if value.Bool() {
+			nextDirection = key
+			break
+		}
+	}
+
+	return matchDirection.Bool(), nextDirection, nextPipe
 }
 
 func getPipes(input []byte) [][]Pipe {
