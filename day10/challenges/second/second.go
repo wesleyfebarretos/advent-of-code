@@ -2,7 +2,6 @@ package challenge2
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"reflect"
 	"regexp"
@@ -39,7 +38,6 @@ func Run() {
 	}
 
 	var maybeS []string
-	_ = maybeS
 
 	directions := map[string]map[string]int{
 		"Right": {
@@ -61,6 +59,7 @@ func Run() {
 	for range directions {
 		loops = append(loops, [][]int{{startPipe.y, startPipe.x}})
 	}
+
 	index := 0
 
 	for _direction, coordinates := range directions {
@@ -71,12 +70,13 @@ func Run() {
 			pipe := startPipe
 			for {
 				matchDirection, nextDirection, nextPipe := walk(pipes, direction, coordinate, coordinateValue, pipe)
-				loops[index] = append(loops[index], []int{nextPipe.y, nextPipe.x})
 
 				if !matchDirection {
 					index++
 					break
 				}
+
+				loops[index] = append(loops[index], []int{nextPipe.y, nextPipe.x})
 
 				for key, value := range directions[nextDirection] {
 					coordinate = key
@@ -97,10 +97,6 @@ func Run() {
 			mainLoop = v
 		}
 	}
-
-	maxSteps := slices.Max(steps)
-
-	fmt.Printf("Part One Steps: %v\n", math.Ceil(float64(maxSteps)/2))
 
 	for direction, dValue := range directions {
 		for coordinate, cValue := range dValue {
@@ -175,32 +171,57 @@ func Run() {
 		rows[i] = string(mutableRows[i])
 	}
 
-	for _, row := range rows {
+	// fmt.Println(strings.Join(rows, "\n"))
+
+	var outside []string
+
+	for y, row := range rows {
+		within := false
+		up := false
 		for x, _ch := range row {
 			ch := string(_ch)
-			intersections := 0
-			_ = intersections
-			if ch != "." {
-				continue
+
+			switch ch {
+			case "|":
+				within = !within
+			case "F", "L":
+				up = ch == "L"
+			case "7", "J":
+				var beforeSpecial string
+
+				if up {
+					beforeSpecial = "J"
+				} else {
+					beforeSpecial = "7"
+				}
+
+				if ch != beforeSpecial {
+					within = !within
+				}
+				up = false
 			}
 
-			for _x := x + 1; _x < len(row); x++ {
-				currCh := string(row[_x])
-				if currCh == "|" {
-					intersections++
-				}
-
-				if currCh == "F" && string(row[_x+1]) == "J" {
-					intersections++
-				}
-				// TODO: Continuar lógica fazer andar para os demais lados
-				// e verificar se está dentro ou não do loop, considerando os
-				// pipes que causam interseção, fiz o andar pra direita, falta
-				// pra esquerda, baixo e cima
+			if !within {
+				outside = append(outside, fmt.Sprintf("%d%d", y, x))
 			}
 		}
 	}
-	// fmt.Println(strings.Join(rows, "\n"))
+
+	// TODO: PEsquisar outras abordagens, e talvez refatorar o metódo de achar o loop
+	// tem nodes esquisitos entrando no meio do loop principal, sem nenhuma ligação
+	fmt.Println(outside)
+	for y, row := range rows {
+		for x := range row {
+			if slices.Index(outside, fmt.Sprintf("%d%d", y, x)) != -1 {
+				fmt.Print("#")
+			} else {
+				fmt.Print(".")
+			}
+		}
+		fmt.Println()
+	}
+
+	fmt.Println(len(rows)*len(rows[0]) - (len(outside) + len(mainLoop)))
 }
 
 func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
@@ -216,6 +237,9 @@ func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe
 		return false, direction, pipe
 	}
 	nextPipe := rows[y][x]
+	if nextPipe.Character == "." || nextPipe.Character == "S" {
+		return false, direction, pipe
+	}
 	// fmt.Printf("Direction: %s\nPipe: %+v\nNextPipe: %+v\nX: %d\nY: %d\n", direction, pipe, nextPipe, x, y)
 
 	nextDirection := direction
