@@ -171,8 +171,6 @@ func Run() {
 		rows[i] = string(mutableRows[i])
 	}
 
-	// fmt.Println(strings.Join(rows, "\n"))
-
 	var outside []string
 
 	for y, row := range rows {
@@ -187,18 +185,18 @@ func Run() {
 			case "F", "L":
 				up = ch == "L"
 			case "7", "J":
-				var beforeSpecial string
-
-				if up {
-					beforeSpecial = "J"
-				} else {
-					beforeSpecial = "7"
-				}
-
-				if ch != beforeSpecial {
+				if up && ch != "J" {
 					within = !within
 				}
+
+				if !up && ch != "7" {
+					within = !within
+				}
+
 				up = false
+			case ".", "-":
+			default:
+				panic(fmt.Sprintf("Unexpected character [horizontal] %s", ch))
 			}
 
 			if !within {
@@ -207,21 +205,65 @@ func Run() {
 		}
 	}
 
-	// TODO: PEsquisar outras abordagens, e talvez refatorar o metódo de achar o loop
-	// tem nodes esquisitos entrando no meio do loop principal, sem nenhuma ligação
-	fmt.Println(outside)
-	for y, row := range rows {
-		for x := range row {
-			if slices.Index(outside, fmt.Sprintf("%d%d", y, x)) != -1 {
-				fmt.Print("#")
-			} else {
-				fmt.Print(".")
-			}
+	var outsideWithoutLoop []string
+
+	for _, outValue := range outside {
+		if slices.Index(mainLoopString, outValue) == -1 {
+			outsideWithoutLoop = append(outsideWithoutLoop, outValue)
 		}
-		fmt.Println()
 	}
 
-	fmt.Println(len(rows)*len(rows[0]) - (len(outside) + len(mainLoop)))
+	// for y, row := range rows {
+	//
+	// 	for x := range row {
+	// 		if slices.Index(outsideWithoutLoop, fmt.Sprintf("%d%d", y, x)) != -1 {
+	// 			fmt.Print("#")
+	// 		} else {
+	// 			fmt.Print(".")
+	// 		}
+	// 	}
+	// 	fmt.Println()
+	// }
+
+	// for y, row := range rows {
+	// 	for x := range row {
+	// 		if slices.Index(mainLoopString, fmt.Sprintf("%d%d", y, x)) != -1 {
+	// 			fmt.Print(string(row[x]))
+	// 		} else {
+	// 			fmt.Print(".")
+	// 		}
+	// 	}
+	// 	fmt.Println()
+	// }
+	//
+	area := len(rows) * len(rows[0])
+
+	// TODO: Lógica funcionando porém investigar o que está acontecendo pro resultado retornar errado
+
+	// insideAndOutsideLoopLen := len(outsideWithoutLoop) + len(mainLoopString)
+	fmt.Printf("Outside Len: %d Inside Len: %d\n", len(outsideWithoutLoop), len(mainLoopString))
+	fmt.Printf("Result union: %d  Result sum: %d\n", len(union(outside, mainLoopString)), len(outsideWithoutLoop)+len(mainLoopString))
+
+	rest := area - len(union(outside, mainLoopString))
+	// rest := area - insideAndOutsideLoopLen
+
+	fmt.Printf("Inside loop: %d\n", rest)
+}
+
+func union(set1, set2 []string) []string {
+	set := make(map[string]bool)
+	for _, v := range set1 {
+		set[v] = true
+	}
+	for _, v := range set2 {
+		set[v] = true
+	}
+
+	unionSet := make([]string, 0, len(set))
+	for k := range set {
+		unionSet = append(unionSet, k)
+	}
+	return unionSet
 }
 
 func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
@@ -233,7 +275,7 @@ func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe
 		y += coordinateValue
 	}
 
-	if x < 0 || y < 0 {
+	if x < 0 || y < 0 || x > len(rows[0])-1 || y > len(rows)-1 {
 		return false, direction, pipe
 	}
 	nextPipe := rows[y][x]
