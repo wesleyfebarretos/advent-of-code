@@ -37,8 +37,6 @@ func Run() {
 		}
 	}
 
-	var maybeS []string
-
 	directions := map[string]map[string]int{
 		"Right": {
 			"x": 1,
@@ -98,56 +96,13 @@ func Run() {
 		}
 	}
 
-	for direction, dValue := range directions {
-		for coordinate, cValue := range dValue {
-			x, y := startPipe.x, startPipe.y
-
-			if coordinate == "x" {
-				x += cValue
-			} else {
-				y += cValue
-			}
-
-			if y < 0 || y > len(pipes) {
-				continue
-			}
-
-			if x < 0 || x > len(pipes[0]) {
-				continue
-			}
-
-			reverseDirection := getReverseDirection(direction)
-			nextPipe := pipes[y][x]
-			matchDirection := reflect.ValueOf(nextPipe).FieldByName(reverseDirection)
-
-			if matchDirection.Bool() {
-				maybeS = append(maybeS, direction)
-			}
-		}
-	}
-
-	var truthyS string
-
-	switch strings.Join(maybeS, "") {
-	case "TopDown", "DownTop":
-		truthyS = "|"
-	case "LeftRight", "RightLeft":
-		truthyS = "-"
-	case "DownRight", "RightDown":
-		truthyS = "F"
-	case "DownLeft", "LeftDown":
-		truthyS = "7"
-	case "TopLeft", "LeftTop":
-		truthyS = "J"
-	case "TopRight", "RightTop":
-		truthyS = "L"
-	}
-
-	var mainLoopString []string
+	mainLoopMap := make(map[string]bool)
 
 	for _, v := range mainLoop {
-		mainLoopString = append(mainLoopString, fmt.Sprintf("%d%d", v[0], v[1]))
+		mainLoopMap[fmt.Sprintf("%d,%d", v[0], v[1])] = true
 	}
+
+	truthyS := getTruthySValue(directions, startPipe, pipes)
 
 	reg := regexp.MustCompile(`[S]+`)
 	rows := strings.Split(strings.TrimSpace(reg.ReplaceAllString(string(input), truthyS)), "\n")
@@ -160,8 +115,8 @@ func Run() {
 
 	for y, row := range mutableRows {
 		for x := range row {
-			coordinate := fmt.Sprintf("%d%d", y, x)
-			if slices.Index(mainLoopString, coordinate) == -1 {
+			coordinate := fmt.Sprintf("%d,%d", y, x)
+			if ok := mainLoopMap[coordinate]; !ok {
 				mutableRows[y][x] = rune('.')
 			}
 		}
@@ -171,7 +126,7 @@ func Run() {
 		rows[i] = string(mutableRows[i])
 	}
 
-	var outside []string
+	outsideLoopMap := make(map[string]bool)
 
 	for y, row := range rows {
 		within := false
@@ -179,12 +134,13 @@ func Run() {
 		for x, _ch := range row {
 			ch := string(_ch)
 
-			switch ch {
-			case "|":
+			if ch == "|" {
 				within = !within
-			case "F", "L":
+			}
+			if ch == "F" || ch == "L" {
 				up = ch == "L"
-			case "7", "J":
+			}
+			if ch == "7" || ch == "J" {
 				if up && ch != "J" {
 					within = !within
 				}
@@ -192,78 +148,33 @@ func Run() {
 				if !up && ch != "7" {
 					within = !within
 				}
-
 				up = false
-			case ".", "-":
-			default:
-				panic(fmt.Sprintf("Unexpected character [horizontal] %s", ch))
 			}
 
 			if !within {
-				outside = append(outside, fmt.Sprintf("%d%d", y, x))
+				outsideLoopMap[fmt.Sprintf("%d,%d", y, x)] = true
 			}
 		}
 	}
 
-	var outsideWithoutLoop []string
-
-	for _, outValue := range outside {
-		if slices.Index(mainLoopString, outValue) == -1 {
-			outsideWithoutLoop = append(outsideWithoutLoop, outValue)
-		}
-	}
-
-	// for y, row := range rows {
-	//
-	// 	for x := range row {
-	// 		if slices.Index(outsideWithoutLoop, fmt.Sprintf("%d%d", y, x)) != -1 {
-	// 			fmt.Print("#")
-	// 		} else {
-	// 			fmt.Print(".")
-	// 		}
-	// 	}
-	// 	fmt.Println()
-	// }
-
-	// for y, row := range rows {
-	// 	for x := range row {
-	// 		if slices.Index(mainLoopString, fmt.Sprintf("%d%d", y, x)) != -1 {
-	// 			fmt.Print(string(row[x]))
-	// 		} else {
-	// 			fmt.Print(".")
-	// 		}
-	// 	}
-	// 	fmt.Println()
-	// }
-	//
 	area := len(rows) * len(rows[0])
 
-	// TODO: Lógica funcionando porém investigar o que está acontecendo pro resultado retornar errado
+	res := area - unionLen(outsideLoopMap, mainLoopMap)
 
-	// insideAndOutsideLoopLen := len(outsideWithoutLoop) + len(mainLoopString)
-	fmt.Printf("Outside Len: %d Inside Len: %d\n", len(outsideWithoutLoop), len(mainLoopString))
-	fmt.Printf("Result union: %d  Result sum: %d\n", len(union(outside, mainLoopString)), len(outsideWithoutLoop)+len(mainLoopString))
-
-	rest := area - len(union(outside, mainLoopString))
-	// rest := area - insideAndOutsideLoopLen
-
-	fmt.Printf("Inside loop: %d\n", rest)
+	fmt.Printf("Inside loop: %d\n", res)
 }
 
-func union(set1, set2 []string) []string {
-	set := make(map[string]bool)
-	for _, v := range set1 {
-		set[v] = true
+func unionLen(set1, set2 map[string]bool) int {
+	union := make(map[string]bool)
+
+	for k := range set1 {
+		union[k] = true
 	}
-	for _, v := range set2 {
-		set[v] = true
+	for k := range set2 {
+		union[k] = true
 	}
 
-	unionSet := make([]string, 0, len(set))
-	for k := range set {
-		unionSet = append(unionSet, k)
-	}
-	return unionSet
+	return len(union)
 }
 
 func walk(rows [][]Pipe, direction, coordinate string, coordinateValue int, pipe Pipe) (bool, string, Pipe) {
@@ -421,4 +332,54 @@ func getReverseDirection(direction string) string {
 	default:
 		panic("invalid direction")
 	}
+}
+
+func getTruthySValue(directions map[string]map[string]int, startPipe Pipe, pipes [][]Pipe) string {
+	var maybeS []string
+
+	for direction, dValue := range directions {
+		for coordinate, cValue := range dValue {
+			x, y := startPipe.x, startPipe.y
+			if coordinate == "x" {
+				x += cValue
+			} else {
+				y += cValue
+			}
+
+			if y < 0 || y > len(pipes) {
+				continue
+			}
+
+			if x < 0 || x > len(pipes[0]) {
+				continue
+			}
+
+			reverseDirection := getReverseDirection(direction)
+			nextPipe := pipes[y][x]
+			matchDirection := reflect.ValueOf(nextPipe).FieldByName(reverseDirection)
+
+			if matchDirection.Bool() {
+				maybeS = append(maybeS, direction)
+			}
+		}
+	}
+
+	var truthyS string
+
+	switch strings.Join(maybeS, "") {
+	case "TopDown", "DownTop":
+		truthyS = "|"
+	case "LeftRight", "RightLeft":
+		truthyS = "-"
+	case "DownRight", "RightDown":
+		truthyS = "F"
+	case "DownLeft", "LeftDown":
+		truthyS = "7"
+	case "TopLeft", "LeftTop":
+		truthyS = "J"
+	case "TopRight", "RightTop":
+		truthyS = "L"
+	}
+
+	return truthyS
 }
