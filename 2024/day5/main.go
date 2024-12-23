@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/wesleyfebarretos/advent-of-code/day5/challenge"
+	"github.com/wesleyfebarretos/advent-of-code/2024/day5/challenge"
 )
 
 func main() {

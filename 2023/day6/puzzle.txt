@@ -1,7 +1,0 @@
-## My Puzzle
-Time:        44     89     96     91
-Distance:   277   1136   1890   1768
-
-## Demonstration
-Time:      7  15   30
-Distance:  9  40  200
