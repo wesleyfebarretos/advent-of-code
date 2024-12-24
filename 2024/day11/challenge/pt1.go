@@ -19,11 +19,11 @@ func Pt1() {
 			if stone == "0" {
 				innerStones = append(innerStones, "1")
 			} else if (len(stone) & 1) == 0 {
-				halfLen := len(stone) / 2
+				middle := len(stone) / 2
 
-				innerStones = append(innerStones, stone[0:halfLen])
+				innerStones = append(innerStones, stone[0:middle])
 
-				innerStones = append(innerStones, removeZeroesFromLeft(stone[halfLen:]))
+				innerStones = append(innerStones, removeZeroesFromLeft(stone[middle:]))
 
 			} else {
 				stoneAsNum, _ := strconv.Atoi(stone)
