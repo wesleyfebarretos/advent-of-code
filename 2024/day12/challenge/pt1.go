@@ -3,6 +3,7 @@ package challenge
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/wesleyfebarretos/advent-of-code/2024/utils"
 )
@@ -13,7 +14,13 @@ type Position struct {
 }
 
 func Pt1() {
-	garden := parsePuzzle(utils.GetPuzzle())
+	result := 0
+
+	defer func(t time.Time) {
+		fmt.Printf("Part 1 result -> %d, runned in %s\n", result, time.Since(t))
+	}(time.Now())
+
+	garden := parsePuzzle(utils.GetTestPuzzle())
 
 	plantMapPositions := initializePlantMapPositions(garden)
 
@@ -34,15 +41,11 @@ func Pt1() {
 		}
 	}
 
-	totalFenchPrice := 0
-
 	for _, region := range regions {
 		if len(region) > 0 {
-			totalFenchPrice += len(region) * calcRegionPerimeter(region, garden, directions)
+			result += len(region) * calcRegionPerimeter(region, garden, directions)
 		}
 	}
-
-	fmt.Printf("Part 1 -> %d", totalFenchPrice)
 }
 
 func calcRegionPerimeter(region []Position, garden [][]string, directions []Position) int {
