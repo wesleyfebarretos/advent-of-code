@@ -20,7 +20,7 @@ func Pt1() {
 		fmt.Printf("Part 1 result -> %d, runned in %s\n", result, time.Since(t))
 	}(time.Now())
 
-	garden := parsePuzzle(utils.GetTestPuzzle())
+	garden := parsePuzzle(utils.GetPuzzle())
 
 	plantMapPositions := initializePlantMapPositions(garden)
 
