@@ -37,7 +37,7 @@ func Pt1() {
 	result := 0
 
 	defer func(t time.Time) {
-		fmt.Printf("\nPart 1 result -> %d, runned in %s", result, time.Since(t))
+		fmt.Printf("\nPart 1 result -> %d, runned in %s\n", result, time.Since(t))
 	}(time.Now())
 
 	clawMachines := parsePuzzle(utils.GetPuzzle())
