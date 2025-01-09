@@ -21,9 +21,11 @@ type Location struct {
 }
 
 const (
-	GRID_LEN     = 103
-	GRID_ROW_LEN = 101
-	SECONDS      = 100
+	// GRID_HEIGHT = 7
+	// GRID_WIDTH  = 11
+	GRID_HEIGHT = 103
+	GRID_WIDTH  = 101
+	SECONDS     = 100
 )
 
 func Pt1() {
@@ -103,15 +105,14 @@ func fillSpaceWithRobotsPosition(robots []Robot, space [][]int) {
 
 func walkWithRobots(robots []Robot) {
 	for i := range robots {
-		for range SECONDS {
-			robots[i].Position = getNextPosition(robots[i])
-		}
+		robots[i].Position.X = (robots[i].Position.X + robots[i].Direction.X*SECONDS + GRID_WIDTH*SECONDS) % GRID_WIDTH
+		robots[i].Position.Y = (robots[i].Position.Y + robots[i].Direction.Y*SECONDS + GRID_HEIGHT*SECONDS) % GRID_HEIGHT
 	}
 }
 
 func getNextPosition(robot Robot) Location {
-	x := wrap(robot.Position.X+robot.Direction.X, GRID_ROW_LEN)
-	y := wrap(robot.Position.Y+robot.Direction.Y, GRID_LEN)
+	x := wrap(robot.Position.X+robot.Direction.X, GRID_WIDTH)
+	y := wrap(robot.Position.Y+robot.Direction.Y, GRID_HEIGHT)
 
 	return Location{X: x, Y: y}
 }
@@ -129,21 +130,21 @@ func wrap(value, max int) int {
 }
 
 func makeGrid() [][]int {
-	grid := make([][]int, GRID_LEN)
+	grid := make([][]int, GRID_HEIGHT)
 
 	for i := range grid {
-		grid[i] = make([]int, GRID_ROW_LEN)
+		grid[i] = make([]int, GRID_WIDTH)
 	}
 
 	return grid
 }
 
-func printSpace(space [][]int) {
+func printSpace[S any](space [][]S) {
 	s := strings.Builder{}
 
 	for _, row := range space {
 		for _, num := range row {
-			s.WriteString(fmt.Sprintf("%d", num))
+			s.WriteString(fmt.Sprintf("%v", num))
 		}
 		s.WriteString("\n")
 	}
