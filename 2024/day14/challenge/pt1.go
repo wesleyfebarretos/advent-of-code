@@ -110,25 +110,6 @@ func walkWithRobots(robots []Robot) {
 	}
 }
 
-func getNextPosition(robot Robot) Location {
-	x := wrap(robot.Position.X+robot.Direction.X, GRID_WIDTH)
-	y := wrap(robot.Position.Y+robot.Direction.Y, GRID_HEIGHT)
-
-	return Location{X: x, Y: y}
-}
-
-func wrap(value, max int) int {
-	if value < 0 {
-		return value + max
-	}
-
-	if value >= max {
-		return value - max
-	}
-
-	return value
-}
-
 func makeGrid() [][]int {
 	grid := make([][]int, GRID_HEIGHT)
 
@@ -137,19 +118,6 @@ func makeGrid() [][]int {
 	}
 
 	return grid
-}
-
-func printSpace[S any](space [][]S) {
-	s := strings.Builder{}
-
-	for _, row := range space {
-		for _, num := range row {
-			s.WriteString(fmt.Sprintf("%v", num))
-		}
-		s.WriteString("\n")
-	}
-
-	fmt.Println(s.String())
 }
 
 func parsePuzzle(puzzle string) []Robot {
