@@ -3,7 +3,6 @@ package challenge
 import (
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/wesleyfebarretos/advent-of-code/2024/utils"
@@ -42,7 +41,7 @@ func walkWithRobotsPt2(robots []Robot, space [][]int, canvas [][]string) int {
 			resetSpace(space)
 			fillSpaceWithRobotsPosition(robots, space)
 			drawInCanvasBySpacePositions(space, canvas)
-			printSpace(canvas)
+			utils.PrintMatrix(canvas)
 			// End
 			return seconds
 		}
@@ -146,17 +145,4 @@ func wrap(value, max int) int {
 	}
 
 	return value
-}
-
-func printSpace[S any](space [][]S) {
-	s := strings.Builder{}
-
-	for _, row := range space {
-		for _, num := range row {
-			s.WriteString(fmt.Sprintf("%v", num))
-		}
-		s.WriteString("\n")
-	}
-
-	fmt.Println(s.String())
 }
