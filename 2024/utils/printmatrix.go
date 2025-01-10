@@ -5,12 +5,12 @@ import (
 	"strings"
 )
 
-func PrintMatrix[S any](space [][]S) {
+func PrintMatrix[S any](m [][]S) {
 	s := strings.Builder{}
 
-	for _, row := range space {
-		for _, num := range row {
-			s.WriteString(fmt.Sprintf("%v", num))
+	for _, row := range m {
+		for _, col := range row {
+			s.WriteString(fmt.Sprintf("%v", col))
 		}
 		s.WriteString("\n")
 	}
