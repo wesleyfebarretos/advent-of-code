@@ -19,7 +19,7 @@ func Pt2() {
 		fmt.Printf("\nPart 2 result -> %d, runned in %s\n", result, time.Since(t))
 	}(time.Now())
 
-	warehouse, directions := parsePuzzle(utils.GetTestPuzzle())
+	warehouse, directions := parsePuzzle(utils.GetPuzzle())
 
 	warehouse = expandWareHouse(warehouse)
 
@@ -27,68 +27,93 @@ func Pt2() {
 
 	robotWalkPt2(warehouse, robotPosition, directions)
 
-	result = calcBoxGPSCoordinates(warehouse)
+	utils.PrintMatrix(warehouse)
+
+	result = calcBoxGPSCoordinatesPt2(warehouse)
 }
 
 func robotWalkPt2(warehouse [][]string, initialPosition Position, directions []Directon) {
 	currentPos := initialPosition
 
-	for _, direction := range directions {
+	for i, direction := range directions {
+		fmt.Println("INDEX ", i)
 		utils.PrintMatrix(warehouse)
 		nextPos := Position{currentPos.Y + direction.Y, currentPos.X + direction.X}
 
-		if hitAWall(nextPos, warehouse) {
-			continue
-		}
-
-		if hitAFloor(nextPos, warehouse) || moveBoxesPt2(nextPos, direction, warehouse) {
+		if moveBoxesPt2(nextPos, direction, warehouse, true) {
 			warehouse[currentPos.Y][currentPos.X] = warehouse[nextPos.Y][nextPos.X]
 			warehouse[nextPos.Y][nextPos.X] = ROBOT
 			currentPos = nextPos
 		}
 
-		time.Sleep(1 * time.Second / 2)
+		//  FIX: At some point near this index a bug is happen, i need to find a way to wait
+		//  all checks from all recursions before change positions
+		if i > 725 {
+			time.Sleep(1 * time.Second / 4)
+		}
+
 	}
+}
+
+func calcBoxGPSCoordinatesPt2(warehouse [][]string) int {
+	total := 0
+
+	for y, row := range warehouse {
+		for x, col := range row {
+			if col == "[" {
+				total += getGPSCoordinate(y, x)
+			}
+		}
+	}
+
+	return total
 }
 
 func hitABoxPt2(position Position, warehouse [][]string) bool {
 	return strings.Contains(BOX_PT2, warehouse[position.Y][position.X])
 }
 
-func moveBoxesPt2(position Position, direction Directon, warehouse [][]string) bool {
+func moveBoxesPt2(position Position, direction Directon, warehouse [][]string, checkAdjacent bool) bool {
 	nextPos := Position{position.Y + direction.Y, position.X + direction.X}
 
-	if hitAWall(nextPos, warehouse) {
+	if hitAFloor(position, warehouse) {
+		return true
+	}
+
+	if hitAWall(position, warehouse) || hitABox(nextPos, warehouse) {
 		return false
 	}
-	utils.PrintMatrix(warehouse)
 
-	//  FIX:
-	//  Something is wrong with logic, its not moving correctly the box's edges
-	if hitABoxPt2(nextPos, warehouse) {
-		if isVerticalWalk(direction) && !moveBoxesPt2(getNextPositionByBoxEdge(nextPos, warehouse), direction, warehouse) {
+	edge := warehouse[position.Y][position.X]
+
+	if isVerticalWalk(direction) {
+		if !moveBoxesPt2(nextPos, direction, warehouse, true) {
 			return false
 		}
 
-		if !moveBoxesPt2(nextPos, direction, warehouse) {
-			return false
+		if checkAdjacent {
+			adjacentBoxEdge := getAdjacentBoxEdge(edge, position)
+			if !moveBoxesPt2(adjacentBoxEdge, direction, warehouse, false) {
+				return false
+			}
 		}
+	} else if !moveBoxesPt2(nextPos, direction, warehouse, true) {
+		return false
 	}
 
 	warehouse[nextPos.Y][nextPos.X] = warehouse[position.Y][position.X]
 	warehouse[position.Y][position.X] = FLOOR
-
 	return true
 }
 
-func getNextPositionByBoxEdge(position Position, warehouse [][]string) Position {
-	switch warehouse[position.Y][position.X] {
+func getAdjacentBoxEdge(edge string, position Position) Position {
+	switch edge {
 	case "[":
 		return Position{position.Y, position.X + 1}
 	case "]":
 		return Position{position.Y, position.X - 1}
 	default:
-		panic("unexpected box edge")
+		return position
 	}
 }
 
@@ -112,7 +137,7 @@ func expandWareHouse(warehouse [][]string) [][]string {
 			case ROBOT:
 				expandedWarehouse[i] = append(expandedWarehouse[i], "@", ".")
 			default:
-				panic("non expected char")
+				panic("unexpected char")
 			}
 		}
 	}
