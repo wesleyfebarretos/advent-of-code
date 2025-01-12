@@ -1,7 +1,9 @@
 package challenge
 
 import (
+	"container/list"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -25,33 +27,104 @@ func Pt2() {
 
 	robotPosition := getRobotPosition(warehouse)
 
-	robotWalkPt2(warehouse, robotPosition, directions)
+	robotWalkBFSApproach(warehouse, robotPosition, directions)
 
-	utils.PrintMatrix(warehouse)
+	// robotWalkDFSApproachPt2(warehouse, robotPosition, directions)
 
 	result = calcBoxGPSCoordinatesPt2(warehouse)
 }
 
-func robotWalkPt2(warehouse [][]string, initialPosition Position, directions []Directon) {
+func robotWalkBFSApproach(warehouse [][]string, initialPosition Position, directions []Directon) {
+	robotPosition := initialPosition
+
+	for _, dir := range directions {
+		queue := list.New()
+
+		queue.PushBack(robotPosition)
+
+		seen := [][2]int{}
+
+		for queue.Len() > 0 {
+			currPos := queue.Remove(queue.Front()).(Position)
+
+			seen = append(seen, [2]int{currPos.Y, currPos.X})
+
+			nextPos := Position{currPos.Y + dir.Y, currPos.X + dir.X}
+
+			if warehouse[nextPos.Y][nextPos.X] == WALL {
+				seen = [][2]int{}
+				break
+			}
+
+			if warehouse[nextPos.Y][nextPos.X] == FLOOR {
+				continue
+			}
+
+			if strings.Contains(BOX_PT2, warehouse[nextPos.Y][nextPos.X]) {
+				queue.PushBack(nextPos)
+
+				if isVerticalWalk(dir) {
+					if warehouse[nextPos.Y][nextPos.X] == "[" {
+						queue.PushBack(Position{nextPos.Y, nextPos.X + 1})
+					} else {
+						queue.PushBack(Position{nextPos.Y, nextPos.X - 1})
+					}
+				}
+			}
+		}
+
+		if len(seen) > 0 {
+			robotPosition.Y = robotPosition.Y + dir.Y
+			robotPosition.X = robotPosition.X + dir.X
+		}
+
+		slices.Reverse(seen)
+
+		duplicates := make(map[string]bool)
+
+		for _, row := range seen {
+			y, x := row[0], row[1]
+
+			if duplicates[fmt.Sprintf("%d|%d", y, x)] {
+				continue
+			}
+
+			duplicates[fmt.Sprintf("%d|%d", y, x)] = true
+
+			warehouse[y+dir.Y][x+dir.X] = warehouse[y][x]
+			warehouse[y][x] = FLOOR
+		}
+	}
+}
+
+func robotWalkDFSApproachPt2(warehouse [][]string, initialPosition Position, directions []Directon) {
 	currentPos := initialPosition
 
-	for i, direction := range directions {
-		fmt.Println("INDEX ", i)
-		utils.PrintMatrix(warehouse)
+	for _, direction := range directions {
 		nextPos := Position{currentPos.Y + direction.Y, currentPos.X + direction.X}
 
-		if moveBoxesPt2(nextPos, direction, warehouse, true) {
+		walkSlice := [][2]int{}
+
+		if moveBoxesPt2(nextPos, direction, warehouse, true, &walkSlice) {
+			seen := make(map[string]struct{})
+
+			for _, row := range walkSlice {
+				y, x := row[0], row[1]
+
+				if _, ok := seen[fmt.Sprintf("%d|%d", y, x)]; ok {
+					continue
+				}
+
+				seen[fmt.Sprintf("%d|%d", y, x)] = struct{}{}
+
+				warehouse[y+direction.Y][x+direction.X] = warehouse[y][x]
+				warehouse[y][x] = "."
+			}
+
 			warehouse[currentPos.Y][currentPos.X] = warehouse[nextPos.Y][nextPos.X]
 			warehouse[nextPos.Y][nextPos.X] = ROBOT
 			currentPos = nextPos
 		}
-
-		//  FIX: At some point near this index a bug is happen, i need to find a way to wait
-		//  all checks from all recursions before change positions
-		if i > 725 {
-			time.Sleep(1 * time.Second / 4)
-		}
-
 	}
 }
 
@@ -73,7 +146,7 @@ func hitABoxPt2(position Position, warehouse [][]string) bool {
 	return strings.Contains(BOX_PT2, warehouse[position.Y][position.X])
 }
 
-func moveBoxesPt2(position Position, direction Directon, warehouse [][]string, checkAdjacent bool) bool {
+func moveBoxesPt2(position Position, direction Directon, warehouse [][]string, checkAdjacent bool, walkSlice *[][2]int) bool {
 	nextPos := Position{position.Y + direction.Y, position.X + direction.X}
 
 	if hitAFloor(position, warehouse) {
@@ -87,22 +160,21 @@ func moveBoxesPt2(position Position, direction Directon, warehouse [][]string, c
 	edge := warehouse[position.Y][position.X]
 
 	if isVerticalWalk(direction) {
-		if !moveBoxesPt2(nextPos, direction, warehouse, true) {
+		if !moveBoxesPt2(nextPos, direction, warehouse, true, walkSlice) {
 			return false
 		}
 
 		if checkAdjacent {
 			adjacentBoxEdge := getAdjacentBoxEdge(edge, position)
-			if !moveBoxesPt2(adjacentBoxEdge, direction, warehouse, false) {
+			if !moveBoxesPt2(adjacentBoxEdge, direction, warehouse, false, walkSlice) {
 				return false
 			}
 		}
-	} else if !moveBoxesPt2(nextPos, direction, warehouse, true) {
+	} else if !moveBoxesPt2(nextPos, direction, warehouse, true, walkSlice) {
 		return false
 	}
 
-	warehouse[nextPos.Y][nextPos.X] = warehouse[position.Y][position.X]
-	warehouse[position.Y][position.X] = FLOOR
+	*walkSlice = append(*walkSlice, [2]int{position.Y, position.X})
 	return true
 }
 
