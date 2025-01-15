@@ -27,6 +27,10 @@ func Pt1() {
 
 	registers, instructions := parsePuzzle(utils.GetPuzzle())
 
+	result = findProgramOutput(registers, instructions)
+}
+
+func findProgramOutput(registers Registers, instructions []int) string {
 	outputs := []int{}
 
 	opMap := operationsMap(&registers, &outputs)
@@ -41,7 +45,7 @@ func Pt1() {
 		outputsStr = append(outputsStr, strconv.Itoa(out))
 	}
 
-	result = strings.Join(outputsStr, ",")
+	return strings.Join(outputsStr, ",")
 }
 
 func operationsMap(registers *Registers, outputs *[]int) map[int]func(int) {
