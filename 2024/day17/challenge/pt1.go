@@ -2,7 +2,6 @@ package challenge
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -35,7 +34,7 @@ func findProgramOutput(registers Registers, instructions []int) string {
 
 	opMap := operationsMap(&registers, &outputs)
 
-	for registers.InstructionPointer < len(instructions) {
+	for registers.InstructionPointer < len(instructions) || registers.A > 0 {
 		opMap[instructions[registers.InstructionPointer]](instructions[registers.InstructionPointer+1])
 	}
 
@@ -52,9 +51,7 @@ func operationsMap(registers *Registers, outputs *[]int) map[int]func(int) {
 	opMap := make(map[int]func(int))
 
 	opMap[0] = func(op int) {
-		operator := getComboOperator(*registers, op)
-
-		registers.A /= int(math.Pow(2, float64(operator)))
+		registers.A >>= getComboOperator(*registers, op)
 		registers.InstructionPointer += 2
 	}
 
@@ -92,15 +89,13 @@ func operationsMap(registers *Registers, outputs *[]int) map[int]func(int) {
 	}
 
 	opMap[6] = func(op int) {
-		operator := getComboOperator(*registers, op)
-		registers.B = registers.A / int(math.Pow(2, float64(operator)))
+		registers.B = registers.A >> getComboOperator(*registers, op)
 		registers.InstructionPointer += 2
 	}
 
 	opMap[7] = func(op int) {
-		operator := getComboOperator(*registers, op)
+		registers.C = registers.A >> getComboOperator(*registers, op)
 
-		registers.C = registers.A / int(math.Pow(2, float64(operator)))
 		registers.InstructionPointer += 2
 	}
 

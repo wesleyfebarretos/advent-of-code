@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,9 +26,10 @@ func findPuzzle(name string) string {
 }
 
 func GetPuzzle() string {
-	return findPuzzle("puzzle.txt")
-}
+	if len(os.Args) > 1 && os.Args[1] == "test" {
+		fmt.Println("NOTICE -> Test puzzle as input")
+		return findPuzzle("puzzle-test.txt")
+	}
 
-func GetTestPuzzle() string {
-	return findPuzzle("puzzle-test.txt")
+	return findPuzzle("puzzle.txt")
 }
