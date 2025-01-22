@@ -24,6 +24,9 @@ func Pt2() {
 }
 
 func countPossiblesArrangements(design string, patterns []string, possibleArrangements map[string]int) int {
+	//  DP Memoization
+	//  the patterns could walk through the same way a lot of times
+	//  so as the algorithm suggest, just cache it and return the value always that reach that points
 	if _, ok := possibleArrangements[design]; ok {
 		return possibleArrangements[design]
 	}
