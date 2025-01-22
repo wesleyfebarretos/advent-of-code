@@ -42,8 +42,8 @@ func isAValidDesign(design string, patterns []string, seen map[string]bool) bool
 			continue
 		}
 
-		if design[:len(p)] == p {
-			if isAValidDesign(design[len(p):], patterns, seen) {
+		if strings.HasPrefix(design, p) {
+			if isAValidDesign(strings.TrimPrefix(design, p), patterns, seen) {
 				return true
 			}
 		}

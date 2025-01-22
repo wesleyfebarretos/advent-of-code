@@ -2,6 +2,7 @@ package challenge
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/wesleyfebarretos/advent-of-code/2024/utils"
@@ -42,8 +43,8 @@ func countPossiblesArrangements(design string, patterns []string, possibleArrang
 			continue
 		}
 
-		if design[:len(p)] == p {
-			result += countPossiblesArrangements(design[len(p):], patterns, possibleArrangements)
+		if strings.HasPrefix(design, p) {
+			result += countPossiblesArrangements(strings.TrimPrefix(design, p), patterns, possibleArrangements)
 		}
 
 	}
