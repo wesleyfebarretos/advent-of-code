@@ -1,7 +1,6 @@
 package challenge
 
 import (
-	"container/list"
 	"fmt"
 	"strings"
 	"time"
@@ -18,33 +17,39 @@ func Pt1() {
 
 	patterns, designs := parsePuzzle(utils.GetPuzzle())
 
-	list := list.New()
-
 	for _, d := range designs {
-		list.PushBack([]string{d, d})
+		seen := map[string]bool{}
+
+		if isAValidDesign(d, patterns, seen) {
+			result += 1
+		}
+	}
+}
+
+func isAValidDesign(design string, patterns []string, seen map[string]bool) bool {
+	if seen[design] {
+		return false
 	}
 
-	validDesigns := make(map[string]bool)
+	seen[design] = true
 
-	for list.Len() > 0 {
-		cdrd := list.Remove(list.Front()).([]string)
+	if len(design) == 0 {
+		return true
+	}
 
-		cd, rd := cdrd[0], cdrd[1]
+	for _, p := range patterns {
+		if len(p) > len(design) {
+			continue
+		}
 
-		for _, p := range patterns {
-
-			if cd == p {
-				validDesigns[rd] = true
-				continue
-			}
-
-			if strings.Index(cd, p) == 0 {
-				list.PushBack([]string{cd[len(p):], rd})
+		if design[:len(p)] == p {
+			if isAValidDesign(design[len(p):], patterns, seen) {
+				return true
 			}
 		}
 	}
 
-	result = len(validDesigns)
+	return false
 }
 
 func parsePuzzle(puzzle string) ([]string, []string) {
