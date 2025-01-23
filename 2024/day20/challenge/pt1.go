@@ -44,8 +44,8 @@ func Pt1() {
 	result := 0
 
 	defer func(t time.Time) {
-		_ = clipboard.WriteAll(fmt.Sprintf("%v", result))
 		fmt.Printf("\nPart 1 result -> %v, runned in %s\n", result, time.Since(t))
+		_ = clipboard.WriteAll(fmt.Sprintf("%v", result))
 	}(time.Now())
 
 	raceMap := parsePuzzle(utils.GetPuzzle())
