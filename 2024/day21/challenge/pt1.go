@@ -3,10 +3,13 @@ package challenge
 import (
 	"container/heap"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/atotto/clipboard"
+	"github.com/wesleyfebarretos/advent-of-code/2024/utils"
 )
 
 const (
@@ -70,6 +73,8 @@ func Pt1() {
 		_ = clipboard.WriteAll(fmt.Sprintf("%v", result))
 	}(time.Now())
 
+	codes := parsePuzzle(utils.GetPuzzle())
+
 	numericKeypad := [][]string{
 		{"7", "8", "9"},
 		{"4", "5", "6"},
@@ -94,50 +99,84 @@ func Pt1() {
 		3: "<",
 	}
 
-	test := "029A"
+	for _, code := range codes {
+		initialPosition := nPadStart
 
-	initialPosition := nPadStart
+		complexity1 := []string{}
+		for _, button := range code {
+			endPos := findEndPosition(string(button), numericKeypad)
 
-	numPath := []string{}
-	for _, button := range test {
-		endPos := findEndPosition(string(button), numericKeypad)
+			complexity1 = append(complexity1, dijkstra(initialPosition, endPos, numericKeypad, directions, dPadMapByDir))
 
-		numPath = append(numPath, dijkstra(initialPosition, endPos, numericKeypad, directions, dPadMapByDir))
+			initialPosition = endPos
+		}
 
-		initialPosition = endPos
+		complexity1 = strings.Split(strings.Join(complexity1, "A")+"A", "")
+
+		initialPosition = dPadStart
+
+		complexity2 := []string{}
+
+		for _, button := range complexity1 {
+			endPos := findEndPosition(string(button), directionalKeypad)
+
+			complexity2 = append(complexity2, dijkstra(initialPosition, endPos, directionalKeypad, directions, dPadMapByDir))
+
+			initialPosition = endPos
+		}
+
+		complexity2 = strings.Split(strings.Join(complexity2, "A")+"A", "")
+
+		initialPosition = dPadStart
+
+		complexity3 := []string{}
+
+		for _, button := range complexity2 {
+			endPos := findEndPosition(string(button), directionalKeypad)
+
+			complexity3 = append(complexity3, dijkstra(initialPosition, endPos, directionalKeypad, directions, dPadMapByDir))
+
+			initialPosition = endPos
+		}
+
+		// reg := regexp.MustCompile(`[^0-9]+`)
+		//
+		// codeNums := reg.ReplaceAllString(code, "")
+		//
+		// cn, _ := strconv.Atoi(codeNums)
+
+		complexity3 = strings.Split(strings.Join(complexity3, "A")+"A", "")
+		// fmt.Println("----------")
+		// fmt.Println(complexity1)
+		// fmt.Println(complexity2)
+		// fmt.Println(complexity3)
+		//
+		// fmt.Println(strings.Join(complexity3, ""))
+		// fmt.Println(strings.Count(strings.Join(complexity3, ""), "A"))
+		// fmt.Println(len(complexity3), cn, calcCodeComplexity(code, len(complexity3)), complexity3)
+		result += calcCodeComplexity(code, len(complexity3))
+
+	}
+}
+
+func calcCodeComplexity(code string, seqLen int) int {
+	reg := regexp.MustCompile(`[^0-9]+`)
+
+	codeNums := reg.ReplaceAllString(code, "")
+
+	cn, _ := strconv.Atoi(codeNums)
+
+	return cn * seqLen
+}
+
+func reverseString(s string) string {
+	sli := []rune(s)
+
+	for i, j := 0, len(sli)-1; i < j; i, j = i+1, j-1 {
+		sli[i], sli[j] = sli[j], sli[i]
 	}
 
-	numPath = strings.Split(strings.Join(numPath, "A")+"A", "")
-
-	initialPosition = dPadStart
-
-	dirPath := []string{}
-	fmt.Println("alo")
-	for _, button := range numPath {
-		endPos := findEndPosition(string(button), directionalKeypad)
-
-		dirPath = append(dirPath, dijkstra(initialPosition, endPos, directionalKeypad, directions, dPadMapByDir))
-
-		initialPosition = endPos
-	}
-
-	dirPath = strings.Split(strings.Join(dirPath, "A")+"A", "")
-
-	initialPosition = dPadStart
-	dirPath2 := []string{}
-
-	fmt.Println("22")
-	for _, button := range dirPath {
-		endPos := findEndPosition(string(button), directionalKeypad)
-
-		dirPath2 = append(dirPath2, dijkstra(initialPosition, endPos, directionalKeypad, directions, dPadMapByDir))
-
-		initialPosition = endPos
-	}
-
-	dirPath2 = strings.Split(strings.Join(dirPath, "A")+"A", "")
-
-	fmt.Println(numPath, dirPath, dirPath2, len(dirPath), len(dirPath2))
+	return string(sli)
 }
 
 func findEndPosition(value string, keypad [][]string) Position {
@@ -157,6 +196,7 @@ func dijkstra(start, end Position, keypad [][]string, directions [][2]int, dPadM
 
 	heap.Init(pq)
 
+	// Need to Try all Possibles ways and get min length from them
 	heap.Push(pq, Node{Row: start.Row, Col: start.Col, Weight: 0})
 
 	dists := make(map[Position]int)
@@ -204,23 +244,18 @@ func dijkstra(start, end Position, keypad [][]string, directions [][2]int, dPadM
 
 	prev, ok := previousDir[end]
 
-	if !ok {
-		fmt.Println(end, start)
-		panic("end not found")
-	}
-
-	// fmt.Println(end)
 	for ok {
 		s.WriteString(dPadMapByDir[prev.Dir])
-		// fmt.Println(keypad[start.Row][start.Col], s.String(), keypad[end.Row][end.Col], prev)
 		prev, ok = previousDir[Position{Row: prev.Row, Col: prev.Col}]
 	}
-	// fmt.Println(previousDir)
-	// fmt.Println(dists)
 
-	return s.String()
+	return reverseString(s.String())
 }
 
 func outOfBounds(n Position, keypad [][]string) bool {
 	return n.Row < 0 || n.Row >= len(keypad) || n.Col < 0 || n.Col >= len(keypad[0])
+}
+
+func parsePuzzle(puzzle string) []string {
+	return strings.Split(puzzle, "\n")
 }
